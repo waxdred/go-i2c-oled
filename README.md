@@ -68,7 +68,7 @@ import (
 )
 
 func main() {
-    // Initialize the OLED display with the provided parameters
+	// Initialize the OLED display with the provided parameters
 	oled, err := goi2coled.NewI2c(ssd1306.SSD1306_SWITCHCAPVCC, 64, 128, 0x3C, 1)
 	if err != nil {
 		panic(err)
@@ -76,22 +76,22 @@ func main() {
 	defer oled.Close()
 
 
-    // Ensure the OLED is properly closed at the end of the program
+    	// Ensure the OLED is properly closed at the end of the program
 	defer oled.Close()
 
-    // Define a black color
+    	// Define a black color
 	black := color.RGBA{0, 0, 0, 255}
 
-    // Set the entire OLED image to black
+    	// Set the entire OLED image to black
 	draw.Draw(oled.img, oled.img.Bounds(), &image.Uniform{black}, image.Point{}, draw.Src)
 
-    // Define a white color
+    	// Define a white color
 	colWhite := color.RGBA{255, 255, 255, 255}
 
-    // Set the starting point for drawing text
+    	// Set the starting point for drawing text
 	point := fixed.Point26_6{fixed.Int26_6(0 * 64), fixed.Int26_6(15 * 64)} // x = 0, y = 15
 
-    // Configure the font drawer with the chosen font and color
+    	// Configure the font drawer with the chosen font and color
 	drawer := &font.Drawer{
 		Dst:  oled.img,
 		Src:  &image.Uniform{colWhite},
@@ -99,28 +99,28 @@ func main() {
 		Dot:  point,
 	}
 
-    // Clear the OLED image (making it all black)
+    	// Clear the OLED image (making it all black)
 	draw.Draw(oled.img, oled.img.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 
-    // Draw the text "Hello" on the OLED image
+    	// Draw the text "Hello" on the OLED image
 	drawer.DrawString("Hello")
     
-    // Move the drawing point down by 10 pixels for the next line of text
+    	// Move the drawing point down by 10 pixels for the next line of text
 	drawer.Dot.Y += fixed.Int26_6(10 * 64)
 
-    // Set the drawing point's x coordinate back to 0 for alignment
+    	// Set the drawing point's x coordinate back to 0 for alignment
 	drawer.Dot.X = fixed.Int26_6(0 * 64)
 
-    // Draw the text "From golang!" on the OLED image
+    	// Draw the text "From golang!" on the OLED image
 	drawer.DrawString("From golang!")
 
-    // Clear the OLED's buffer (if applicable to your library)
+    	// Clear the OLED's buffer (if applicable to your library)
 	oled.Clear()
 
-    // Update the OLED's buffer with the current image data
+    	// Update the OLED's buffer with the current image data
 	oled.Draw()
 
-    // Display the buffered content on the OLED screen
+    	// Display the buffered content on the OLED screen
 	err = oled.Display()
 }
 ```

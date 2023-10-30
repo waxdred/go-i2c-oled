@@ -38,7 +38,6 @@ type screen struct {
 	contrast int
 	buffer   []byte
 	vccState int
-	img      draw.Image
 }
 
 // Function to initialize a new screen with given height and width
@@ -46,7 +45,6 @@ func newScreen(vccState, h, w int) screen {
 	return screen{
 		h:        h,
 		w:        w,
-		img:      image.NewRGBA((image.Rect(0, 0, int(w), int(h)))),
 		vccState: vccState,
 	}
 }
@@ -59,6 +57,7 @@ type I2c struct {
 	currentRow byte
 	currentCol byte
 	screen
+	Img draw.Image
 }
 
 // Function to initialize I2C with given parameters
@@ -84,6 +83,7 @@ func NewI2c(vccState, h, w, address, bus int) (*I2c, error) {
 		bus:     bus,
 		fd:      fd,
 		screen:  newScreen(vccState, h, w),
+		Img:     image.NewRGBA((image.Rect(0, 0, int(w), int(h)))),
 	}
 	i2c.DisplayOn()
 	return i2c, nil

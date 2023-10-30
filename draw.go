@@ -4,15 +4,10 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"image/draw"
 )
 
-func (i *I2c) GetImage() draw.Image {
-	return i.screen.img
-}
-
 func (i *I2c) convertImageToOLEDData() ([]byte, error) {
-	bounds := i.img.Bounds()
+	bounds := i.Img.Bounds()
 	if bounds.Max.X != i.screen.w || i.screen.h != bounds.Max.Y {
 		panic(fmt.Sprintf("Error: Size of image is not %dx%d pixels.", i.screen.w, i.screen.h))
 	}
@@ -24,7 +19,7 @@ func (i *I2c) convertImageToOLEDData() ([]byte, error) {
 			for bit := 0; bit < 8; bit++ {
 				y := page*8 + 7 - bit
 				if y < i.screen.h {
-					col := color.GrayModel.Convert(i.img.At(x, y)).(color.Gray)
+					col := color.GrayModel.Convert(i.Img.At(x, y)).(color.Gray)
 					if col.Y > 127 {
 						bits = (bits << 1) | 1
 					} else {
@@ -40,7 +35,7 @@ func (i *I2c) convertImageToOLEDData() ([]byte, error) {
 }
 
 func (i *I2c) DrawImage(image *image.RGBA) {
-	i.img = image
+	i.Img = image
 	i.buffer, _ = i.convertImageToOLEDData()
 }
 

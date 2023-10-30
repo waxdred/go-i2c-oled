@@ -4,7 +4,12 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/draw"
 )
+
+func (i *I2c) GetImage() draw.Image {
+	return i.screen.img
+}
 
 func (i *I2c) convertImageToOLEDData() ([]byte, error) {
 	bounds := i.img.Bounds()

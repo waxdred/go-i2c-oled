@@ -83,7 +83,7 @@ func main() {
 	black := color.RGBA{0, 0, 0, 255}
 
     	// Set the entire OLED image to black
-	draw.Draw(oled.img, oled.img.Bounds(), &image.Uniform{black}, image.Point{}, draw.Src)
+	draw.Draw(oled.Img, oled.Img.Bounds(), &image.Uniform{black}, image.Point{}, draw.Src)
 
     	// Define a white color
 	colWhite := color.RGBA{255, 255, 255, 255}
@@ -93,14 +93,14 @@ func main() {
 
     	// Configure the font drawer with the chosen font and color
 	drawer := &font.Drawer{
-		Dst:  oled.img,
+		Dst:  oled.Img,
 		Src:  &image.Uniform{colWhite},
 		Face: basicfont.Face7x13,
 		Dot:  point,
 	}
 
     	// Clear the OLED image (making it all black)
-	draw.Draw(oled.img, oled.img.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
+	draw.Draw(oled.Img, oled.img.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 
     	// Draw the text "Hello" on the OLED image
 	drawer.DrawString("Hello")

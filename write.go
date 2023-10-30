@@ -1,4 +1,4 @@
-package main
+package goi2coled
 
 // Write data to I2C
 func (i *I2c) Write(b []byte) (int, error) {
@@ -12,10 +12,12 @@ func (i *I2c) WriteCommand(cmd byte) (int, error) {
 
 // Send data to OLED
 func (i *I2c) WriteData(data []byte) (int, error) {
-	prefixedData := make([]byte, 2*len(data))
-	for idx, value := range data {
-		prefixedData[2*idx] = OLED_DATA
-		prefixedData[2*idx+1] = value
+	res := 0
+	for _, value := range data {
+		if _, err := i.Write([]byte{OLED_DATA, value}); err != nil {
+			return res, err
+		}
+		res++
 	}
-	return i.Write(prefixedData)
+	return res, nil
 }

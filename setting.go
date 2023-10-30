@@ -1,4 +1,4 @@
-package main
+package goi2coled
 
 import (
 	"fmt"

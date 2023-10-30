@@ -60,6 +60,7 @@ import (
 	"image/color"
 	"image/draw"
 
+        "github.com/waxdred/go-i2c-oled"
 	"github.com/waxdred/go-i2c-oled/ssd1306"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
@@ -68,11 +69,12 @@ import (
 
 func main() {
     // Initialize the OLED display with the provided parameters
-	oled, err := NewI2c(ssd1306.SSD1306_SWITCHCAPVCC, 64, 128, 0x3C, 1)
+	oled, err := goi2coled.NewI2c(ssd1306.SSD1306_SWITCHCAPVCC, 64, 128, 0x3C, 1)
 	if err != nil {
-		fmt.Println("Init error:", err)
 		panic(err)
 	}
+	defer oled.Close()
+
 
     // Ensure the OLED is properly closed at the end of the program
 	defer oled.Close()

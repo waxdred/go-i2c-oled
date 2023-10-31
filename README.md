@@ -52,46 +52,129 @@ err = i2c.SetContrast(contrastValue)  // contrastValue: 0 to 255
 err = i2c.SetDim(true)  // Set to true to dim
 ```
 
+![](https://i.imgur.com/7ooOKd1.gif)
+
 ## Exemple
 ```go
+package main
+
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
+	"image/png"
+	"math/rand"
+	"os"
+	"os/exec"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
 
-        "github.com/waxdred/go-i2c-oled"
+	"github.com/waxdred/go-i2c-oled"
 	"github.com/waxdred/go-i2c-oled/ssd1306"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
 	"golang.org/x/image/math/fixed"
 )
 
+type Stat struct {
+	Ip   string
+	Cpu  string
+	Mem  string
+	Disk string
+}
+
+func GlitchEffect(img image.Image, intensity float64) image.Image {
+	bounds := img.Bounds()
+	glitched := image.NewRGBA(bounds)
+
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		if rand.Float64() < intensity {
+			switch rand.Intn(3) {
+			case 0: // Décalage horizontal
+				shift := rand.Intn(20) - 10
+				for x := bounds.Min.X; x < bounds.Max.X; x++ {
+					glitched.Set(x, y, img.At((x+shift)%bounds.Max.X, y))
+				}
+			case 1: // Sauter la ligne
+				continue
+			case 2: // Perturbation des couleurs
+				for x := bounds.Min.X; x < bounds.Max.X; x++ {
+					r, g, b, a := img.At(x, y).RGBA()
+					glitched.Set(
+						x,
+						y,
+						color.RGBA{
+							uint8((r + rand.Uint32()) % 256),
+							uint8((g + rand.Uint32()) % 256),
+							uint8((b + rand.Uint32()) % 256),
+							uint8(a),
+						},
+					)
+				}
+			}
+		} else {
+			for x := bounds.Min.X; x < bounds.Max.X; x++ {
+				glitched.Set(x, y, img.At(x, y))
+			}
+		}
+	}
+
+	return glitched
+}
+
+func CreateGlitchAnimation(img image.Image, frames int) []image.Image {
+	var sequence []image.Image
+
+	for i := 0; i < frames; i++ {
+		intensity := rand.Float64() // Ajustez cette partie pour contrôler l'intensité du glitch
+		glitchedFrame := GlitchEffect(img, intensity)
+		sequence = append(sequence, glitchedFrame)
+	}
+
+	return sequence
+}
+
+func executeCmd(command string, args ...string) string {
+	cmd := exec.Command(command, args...)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println("Error executing command:", err)
+		return ""
+	}
+	return strings.TrimSpace(out.String())
+}
+
+func GetStat() Stat {
+	return Stat{
+		Ip:   executeCmd("bash", "-c", "hostname -I | cut -d' ' -f1"),
+		Cpu:  executeCmd("bash", "-c", "top -bn1 | grep load | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'"),
+		Mem:  executeCmd("bash", "-c", "free -m | awk 'NR==2{printf \"Mem: %.2f%%\", $3*100/$2 }'"),
+		Disk: executeCmd("bash", "-c", "df -h | awk '$NF==\"/\"{printf \"Disk: %d/%dGB %s\", $3,$2,$5}'"),
+	}
+}
+
 func main() {
-	// Initialize the OLED display with the provided parameters
 	oled, err := goi2coled.NewI2c(ssd1306.SSD1306_SWITCHCAPVCC, 64, 128, 0x3C, 1)
 	if err != nil {
 		panic(err)
 	}
 	defer oled.Close()
 
-
-    	// Ensure the OLED is properly closed at the end of the program
-	defer oled.Close()
-
-    	// Define a black color
 	black := color.RGBA{0, 0, 0, 255}
 
-    	// Set the entire OLED image to black
-	draw.Draw(oled.Img, oled.Img.Bounds(), &image.Uniform{black}, image.Point{}, draw.Src)
-
-    	// Define a white color
+	// Define a white color
 	colWhite := color.RGBA{255, 255, 255, 255}
 
-    	// Set the starting point for drawing text
-	point := fixed.Point26_6{fixed.Int26_6(0 * 64), fixed.Int26_6(15 * 64)} // x = 0, y = 15
+	// Set the starting point for drawing text
+	point := fixed.Point26_6{fixed.Int26_6(0 * 64), fixed.Int26_6(0 * 64)} // x = 0, y = 15
 
-    	// Configure the font drawer with the chosen font and color
+	// Configure the font drawer with the chosen font and color
 	drawer := &font.Drawer{
 		Dst:  oled.Img,
 		Src:  &image.Uniform{colWhite},
@@ -99,30 +182,89 @@ func main() {
 		Dot:  point,
 	}
 
-    	// Clear the OLED image (making it all black)
-	draw.Draw(oled.Img, oled.img.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
+	done := make(chan os.Signal, 1)
+	stopCh := make(chan bool, 1)
 
-    	// Draw the text "Hello" on the OLED image
-	drawer.DrawString("Hello")
-    
-    	// Move the drawing point down by 10 pixels for the next line of text
-	drawer.Dot.Y += fixed.Int26_6(10 * 64)
+	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
 
-    	// Set the drawing point's x coordinate back to 0 for alignment
-	drawer.Dot.X = fixed.Int26_6(0 * 64)
+	// load rpi logo
+	logoFile, err := os.Open("./rpi1.png")
+	if err != nil {
+		fmt.Println("Error opening logo file:", err)
+		return
+	}
+	defer logoFile.Close()
+	logoImg, err := png.Decode(logoFile)
+	if err != nil {
+		fmt.Println("Error decoding logo image:", err)
+		return
+	}
 
-    	// Draw the text "From golang!" on the OLED image
-	drawer.DrawString("From golang!")
+	go func() {
+		for {
+			select {
+			case <-stopCh:
+			default:
+				// Set the entire OLED image to black
+				draw.Draw(oled.Img, oled.Img.Bounds(), &image.Uniform{black}, image.Point{}, draw.Src)
+				// Dessiner le logo à la position souhaitée
+				drawer.Dot.Y = fixed.Int26_6(0 * 64)
+				drawer.Dot.X = fixed.Int26_6(0 * 64)
+				dstRect := image.Rect(0, 0, logoImg.Bounds().Dx(), logoImg.Bounds().Dy()+15)
+				draw.Draw(oled.Img, dstRect, logoImg, image.Point{}, draw.Over)
 
-    	// Clear the OLED's buffer (if applicable to your library)
-	oled.Clear()
+				// Déplacer le point de dessin du texte pour laisser de la place à l'image
+				drawer.Dot.Y = fixed.Int26_6(14 * 64)
+				drawer.Dot.X = fixed.Int26_6(
+					(logoImg.Bounds().Dx() + 10) * 64,
+				) // +10 pour laisser un peu d'espace entre le logo et le texte
 
-    	// Update the OLED's buffer with the current image data
-	oled.Draw()
+				drawer.DrawString("Rpi 4")
+				drawer.Dot.Y += fixed.Int26_6(30 * 64)
+				drawer.Dot.X = fixed.Int26_6(
+					(logoImg.Bounds().Dx() + 10) * 64,
+				)
+				drawer.DrawString(executeCmd("hostname"))
+				oled.Draw()
+				oled.Display()
 
-    	// Display the buffered content on the OLED screen
-	err = oled.Display()
+				time.Sleep(time.Second * 10)
+				// transition
+				transistion := CreateGlitchAnimation(oled.Img, 10)
+				for _, t := range transistion {
+					drawer.Dot.Y = fixed.Int26_6(0 * 64)
+					drawer.Dot.X = fixed.Int26_6(0 * 64)
+					draw.Draw(oled.Img, dstRect, t, image.Point{}, draw.Over)
+					oled.Draw()
+					oled.Display()
+					time.Sleep(time.Microsecond * 2)
+				}
+
+				drawer.Dot.Y = fixed.Int26_6(10 * 64)
+				drawer.Dot.X = fixed.Int26_6(0 * 64)
+				draw.Draw(oled.Img, oled.Img.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
+				stat := GetStat()
+				drawer.DrawString(fmt.Sprintf("Ip: %s", stat.Ip))
+				drawer.Dot.Y += fixed.Int26_6(16 * 64)
+				drawer.Dot.X = fixed.Int26_6(0 * 64)
+				drawer.DrawString(stat.Cpu)
+				drawer.Dot.Y += fixed.Int26_6(14 * 64)
+				drawer.Dot.X = fixed.Int26_6(0 * 64)
+				drawer.DrawString(stat.Mem)
+				drawer.Dot.Y += fixed.Int26_6(14 * 64)
+				drawer.Dot.X = fixed.Int26_6(0 * 64)
+				drawer.DrawString(stat.Disk)
+				oled.Draw()
+				oled.Display()
+				time.Sleep(time.Second * 10)
+			}
+		}
+	}()
+	<-done
+	stopCh <- true
+	fmt.Printf("Stop programme")
 }
+
 ```
 
 ## Notes

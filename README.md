@@ -241,6 +241,7 @@ func GetStat() Stat {
 }
 
 func main() {
+	// Initialize the OLED with specific settings
 	oled, err := goi2coled.NewI2c(ssd1306.SSD1306_SWITCHCAPVCC, 64, 128, 0x3C, 1)
 	if err != nil {
 		panic(err)
@@ -249,11 +250,11 @@ func main() {
 
 	black := color.RGBA{0, 0, 0, 255}
 
-	// Define a white color
+	// Define a white color for text and drawings
 	colWhite := color.RGBA{255, 255, 255, 255}
 
 	// Set the starting point for drawing text
-	point := fixed.Point26_6{fixed.Int26_6(0 * 64), fixed.Int26_6(0 * 64)} // x = 0, y = 15
+	point := fixed.Point26_6{fixed.Int26_6(0 * 64), fixed.Int26_6(0 * 64)} // x = 0, y = 0 initially
 
 	// Configure the font drawer with the chosen font and color
 	drawer := &font.Drawer{
@@ -263,12 +264,13 @@ func main() {
 		Dot:  point,
 	}
 
+	// Setting up channel for graceful shutdown
 	done := make(chan os.Signal, 1)
 	stopCh := make(chan bool, 1)
 
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
 
-	// load rpi logo
+	// Load Raspberry Pi logo
 	logoFile, err := os.Open("./rpi1.png")
 	if err != nil {
 		fmt.Println("Error opening logo file:", err)
@@ -285,7 +287,9 @@ func main() {
 		for {
 			select {
 			case <-stopCh:
+				return
 			default:
+				// Main loop for updating the display
 				// Set the entire OLED image to black
 				draw.Draw(oled.Img, oled.Img.Bounds(), &image.Uniform{black}, image.Point{}, draw.Src)
 				// Dessiner le logo à la position souhaitée
@@ -294,11 +298,10 @@ func main() {
 				dstRect := image.Rect(0, 0, logoImg.Bounds().Dx(), logoImg.Bounds().Dy()+15)
 				draw.Draw(oled.Img, dstRect, logoImg, image.Point{}, draw.Over)
 
-				// Déplacer le point de dessin du texte pour laisser de la place à l'image
 				drawer.Dot.Y = fixed.Int26_6(14 * 64)
 				drawer.Dot.X = fixed.Int26_6(
 					(logoImg.Bounds().Dx() + 10) * 64,
-				) // +10 pour laisser un peu d'espace entre le logo et le texte
+				)
 
 				drawer.DrawString("Rpi 4")
 				drawer.Dot.Y += fixed.Int26_6(30 * 64)

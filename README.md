@@ -80,7 +80,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer oled.Close()
 
 
     	// Ensure the OLED is properly closed at the end of the program

@@ -63,7 +63,6 @@ err = i2c.SetDim(true)  // Set to true to dim
 ## Exemple
 ```go
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
@@ -81,7 +80,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer oled.Close()
 
 
     	// Ensure the OLED is properly closed at the end of the program
@@ -108,7 +106,7 @@ func main() {
 	}
 
     	// Clear the OLED image (making it all black)
-	draw.Draw(oled.Img, oled.img.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
+	draw.Draw(oled.Img, oled.Img.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 
     	// Draw the text "Hello" on the OLED image
 	drawer.DrawString("Hello")

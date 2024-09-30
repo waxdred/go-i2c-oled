@@ -132,7 +132,7 @@ func main() {
 ```
 ### gif
 
-[https://i.imgur.com/7ooOKd1.gif](https://i.imgur.com/7ooOKd1.gif)
+![https://i.imgur.com/7ooOKd1.gif](https://i.imgur.com/7ooOKd1.gif)
 
 ## Exemple_Stat
 ```go

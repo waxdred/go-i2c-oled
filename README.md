@@ -181,9 +181,9 @@ func GlitchEffect(img image.Image, intensity float64) image.Image {
 				for x := bounds.Min.X; x < bounds.Max.X; x++ {
 					glitched.Set(x, y, img.At((x+shift)%bounds.Max.X, y))
 				}
-			case 1: // Sauter la ligne
+			case 1:
 				continue
-			case 2: // Perturbation des couleurs
+			case 2:
 				for x := bounds.Min.X; x < bounds.Max.X; x++ {
 					r, g, b, a := img.At(x, y).RGBA()
 					glitched.Set(
@@ -212,7 +212,7 @@ func CreateGlitchAnimation(img image.Image, frames int) []image.Image {
 	var sequence []image.Image
 
 	for i := 0; i < frames; i++ {
-		intensity := rand.Float64() // Ajustez cette partie pour contrôler l'intensité du glitch
+		intensity := rand.Float64()
 		glitchedFrame := GlitchEffect(img, intensity)
 		sequence = append(sequence, glitchedFrame)
 	}
@@ -293,7 +293,7 @@ func main() {
 				// Main loop for updating the display
 				// Set the entire OLED image to black
 				draw.Draw(oled.Img, oled.Img.Bounds(), &image.Uniform{black}, image.Point{}, draw.Src)
-				// Dessiner le logo à la position souhaitée
+				
 				drawer.Dot.Y = fixed.Int26_6(0 * 64)
 				drawer.Dot.X = fixed.Int26_6(0 * 64)
 				dstRect := image.Rect(0, 0, logoImg.Bounds().Dx(), logoImg.Bounds().Dy()+15)
@@ -314,7 +314,7 @@ func main() {
 				oled.Display()
 
 				time.Sleep(time.Second * 10)
-				// transition
+				
 				transistion := CreateGlitchAnimation(oled.Img, 10)
 				for _, t := range transistion {
 					drawer.Dot.Y = fixed.Int26_6(0 * 64)

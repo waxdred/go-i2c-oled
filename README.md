@@ -134,6 +134,7 @@ func main() {
 
 ![](https://i.imgur.com/7ooOKd1.gif)
 
+
 ## Exemple_Stat
 ```go
 package mahttps://i.imgur.com/7ooOKd1.gifin

@@ -138,7 +138,7 @@ func main() {
 ## Exemple_Stat
 
 ```go
-package mahttps://i.imgur.com/7ooOKd1.gifin
+package main
 
 import (
 	"bytes"
